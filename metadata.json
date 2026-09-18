@@ -1,0 +1,12 @@
+{
+  "name": "FirstAidLens AI",
+  "description": "Real-time visual first-aid decision copilot for domestic emergencies with multimodal injury triage, micro-step countdown timers, Indonesian/English voice guidance, and one-tap emergency escalation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
