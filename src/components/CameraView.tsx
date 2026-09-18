@@ -45,6 +45,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
 
   // Stop camera helper
   const stopCamera = useCallback(() => {
@@ -59,6 +60,21 @@ export const CameraView: React.FC<CameraViewProps> = ({
   // Start camera helper
   const startCamera = useCallback(async () => {
     setCameraError(null);
+
+    const isSecure =
+      window.isSecureContext ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    // If on insecure HTTP or mediaDevices is not available, trigger native camera capture directly
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !isSecure) {
+      setCameraError(
+        'Kamera live video dibatasi browser pada koneksi HTTP (butuh HTTPS). Mengalihkan ke mode jepret kamera langsung ponsel...'
+      );
+      cameraCaptureInputRef.current?.click();
+      return;
+    }
+
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -96,9 +112,10 @@ export const CameraView: React.FC<CameraViewProps> = ({
     } catch (err: unknown) {
       console.warn('Camera access error:', err);
       setCameraError(
-        'Tidak dapat mengakses kamera live. Pastikan izin kamera telah disetujui, atau unggah foto dari galeri/gunakan sampel simulasi di bawah.'
+        'Kamera live video tidak diizinkan browser pada HTTP. Buka kamera jepret langsung ponsel di bawah:'
       );
       setCameraActive(false);
+      cameraCaptureInputRef.current?.click();
     }
   }, [facingMode]);
 
@@ -375,9 +392,19 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
               {/* Camera Error Notice if any */}
               {cameraError && (
-                <div className="max-w-md p-3 rounded-xl bg-amber-950/70 border border-amber-800/80 text-amber-300 text-xs flex items-start gap-2 text-left relative z-10">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{cameraError}</span>
+                <div className="max-w-md w-full p-3.5 rounded-xl bg-amber-950/80 border border-amber-700/80 text-amber-200 text-xs flex flex-col gap-2.5 text-left relative z-10 shadow-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                    <span className="leading-relaxed">{cameraError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => cameraCaptureInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-md"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>📸 Jepret Kamera HP Sekarang</span>
+                  </button>
                 </div>
               )}
 
@@ -392,7 +419,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
                   className="flex-1 min-w-[200px] flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-950/60 transition cursor-pointer"
                 >
                   <Camera className="w-5 h-5" />
-                  <span>Buka Kamera Langsung</span>
+                  <span>Buka Kamera</span>
                 </motion.button>
 
                 <motion.button
@@ -408,6 +435,17 @@ export const CameraView: React.FC<CameraViewProps> = ({
                 </motion.button>
               </div>
 
+              {/* Native mobile camera capture input (always works on HTTP) */}
+              <input
+                ref={cameraCaptureInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
+              {/* Standard gallery file input */}
               <input
                 ref={fileInputRef}
                 type="file"
